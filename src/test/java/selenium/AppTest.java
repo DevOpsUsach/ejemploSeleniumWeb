@@ -7,7 +7,22 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.interactions.Actions;
+import org.testng.Assert;
+
+import selenium.Models.AccionesCompra;
+import selenium.Models.Carrito;
+import selenium.Models.CrearCuenta;
+import selenium.Models.CuentaUsuario;
+import selenium.Models.FormularioCrearCuenta;
+import selenium.Models.FormularioInicioSesion;
+import selenium.Models.FormularioRegistrarCuenta;
+import selenium.Models.ResumenCarrito;
+import selenium.Models.Ropas;
+import selenium.Models.SeleccionarDireccion;
+
 import org.junit.Test;
+import org.junit.AfterClass;
 import org.junit.Before;
 import java.util.List;
 
@@ -16,80 +31,172 @@ import java.util.List;
  */
 public class AppTest {
 
-    private WebDriver driver;
+    private WebDriver driver;    
+	private Actions action;
+
+	private Ropas clothes;
+	private Carrito cart;
+	private AccionesCompra shoppingActions;
+	private ResumenCarrito summary;
+	private FormularioInicioSesion signinForm;
+    private CrearCuenta signupForm;
+    private FormularioCrearCuenta registerForm;
+    private SeleccionarDireccion seleccionarDireccion;
+	private CuentaUsuario account;
 
     @Before
     public void setUp() {
         System.out.println("Iniciando configuración...");
         System.setProperty("webdriver.chrome.driver", "drivers/chromedriver");
         driver = new ChromeDriver();
-        driver.get("https://www.google.com");
+        driver.get("http://automationpractice.com/index.php");
         driver.manage().window().maximize();
-        System.out.println(driver.getCurrentUrl());
-        System.out.println(driver.getTitle());
+
+        
+		action = new Actions(driver);
+
+		clothes = new Ropas(driver);
+		cart = new Carrito(driver);
+		shoppingActions = new AccionesCompra(driver);
+		signinForm = new FormularioInicioSesion(driver);
+        signupForm = new CrearCuenta(driver);
+        registerForm = new FormularioCrearCuenta(driver);
+        seleccionarDireccion = new SeleccionarDireccion(driver);
+		summary = new ResumenCarrito(driver);
+		account = new CuentaUsuario(driver);
+
+
+        /*System.out.println(driver.getCurrentUrl());
+        System.out.println(driver.getTitle());*/
+
+        /*
+        
+        - Simular la navegación y compra de un producto
+        - Seleccionar un producto. Agregar al carro
+        - Al realizar checkout 
+        - Llenar el formulario con los datos
+        - Crear una cuenta nueva
+        - Verificar que el correo ingresado corresponda al formulario (Punto de verificación)
+        - Address Billing (2 Punto de verificación. Los datos visualizados deben ser iguales a los datos ingresados)
+        - Shipping Aceptar Terminos
+        - Pay by bank wire
+        - Confirmar orden (3 punto de verificación. Monto del Pay by bank wire. Total Ammount)
+        - 
+        
+        */
     }
+
+    // @AfterClass
+	// public void closeAll() {
+	// 	//account.getAccountLogout().click();
+	// 	driver.quit();
+	// }
 
     @Test
-    public void buscarEnGoogleDevOpsHandbookDevuelvePaginaDescripcion() {
-        System.out.println("Iniciando el test de búsqueda de libro en Google");
-        WebElement searchbox = driver.findElement(By.name("q"));
-        searchbox.sendKeys("DevOps Handbook");
-        searchbox.submit();
+    public void compraDeProducto() {
+        System.out.println("Iniciando el test de Compra de producto en el sitio");
 
-        // List<WebElement> elements = driver.findElements(By.tagName("a"));
-        String urlDescripcionLibro = "";
-        List<WebElement> elements = driver.findElements(By.xpath("//a[starts-with(@href, 'https://www.amazon.com/')]"));
-        System.out.println("Number of elements:" + elements.size());
+        Assert.assertTrue(clothes.getDressesBtn().isDisplayed());
 
-        for (int i = 0; i < elements.size(); i++) {
-            System.out.println("Enlaces Href:" + elements.get(i).getAttribute("href"));
-            if (elements.get(i).getAttribute("href").contains("DevOps")) {
-                urlDescripcionLibro = elements.get(i).getAttribute("href").trim();
-                break;
-            }
-        }
-        System.out.println("Url Descripción:" + urlDescripcionLibro);
-        if (!urlDescripcionLibro.isEmpty()) {
-            driver.navigate().to(urlDescripcionLibro);
-            assertTrue("Pagina de descripcion", driver.getTitle().contains("DevOps Handbook"));
-            // assertEquals("DevOps Handbook - Buscar con Google", driver.getTitle());
-        } else {
+		action.moveToElement(clothes.getDressesBtn()).perform();
 
-            assertEquals("DevOps Handbook - Buscar con Google", driver.getTitle());
-        }
+		Assert.assertTrue(clothes.getSummerDressesBtn().isDisplayed());
+		Assert.assertTrue(clothes.getCasualDressesBtn().isDisplayed());
+		Assert.assertTrue(clothes.getEveningDressesBtn().isDisplayed());
+
+		action.moveToElement(clothes.getSummerDressesBtn()).perform();
+		clothes.getSummerDressesBtn().click();
+
+		Assert.assertTrue(clothes.getSummerDressProduct(1).isDisplayed());
+		Assert.assertTrue(clothes.getSummerDressProduct(2).isDisplayed());
+		Assert.assertTrue(clothes.getSummerDressProduct(3).isDisplayed());
+		Assert.assertEquals(clothes.getDressesCount().size(), 3);
+
+		action.moveToElement(clothes.getSummerDressProduct(1)).perform();
+		action.moveToElement(shoppingActions.getAddToCartBtn()).perform();
+
+		Assert.assertTrue(shoppingActions.getAddToCartBtn().isDisplayed());
+
+		action.click(shoppingActions.getAddToCartBtn()).build().perform();
+		action.click(shoppingActions.getContinueShopingBtn()).build().perform();
+
+		Assert.assertTrue(shoppingActions.getContinueShopingBtn().isDisplayed());
+
+		action.moveToElement(cart.getCartTab()).perform();
+
+		Assert.assertEquals(cart.getCartProductsQty().size(), 1);
+
+		action.moveToElement(cart.getCartShipingCost()).perform();
+
+		Assert.assertEquals(cart.getCartShipingCost().getText(), "$2.00");
+
+		action.moveToElement(cart.getCartTotalPrice()).perform();
+
+		Assert.assertEquals(cart.getCartTotalPrice().getText(), "$30.98");
+
+
+        action.moveToElement(cart.getCartTab()).perform();
+		action.moveToElement(cart.getCartTabCheckOutBtn()).perform();
+
+		Assert.assertTrue(cart.getCartTabCheckOutBtn().isDisplayed());
+
+		action.click(cart.getCartTabCheckOutBtn()).build().perform();
+		
+		Assert.assertTrue(summary.getCartSummaryTable().isDisplayed());
+		Assert.assertEquals(summary.getCartSummTotalProductsNum().size(), 1);
+		Assert.assertEquals(summary.getCartSummTotalProductsPrice().getText(), "$28.98");
+		Assert.assertEquals(summary.getCartSummaryTotalPrice().getText(), "$30.98");
+		Assert.assertEquals(summary.getCartSummTotalShipping().getText(), "$2.00");
+		
+
+        summary.getCartProceedBtn().click();
+
+		Assert.assertTrue(signupForm.getCreateAccountForm().isDisplayed());
+
+		signupForm.setCreateAccountEmailField("testm4_3@usach.cl");
+		
+		signupForm.getCreateAccountBtn().click();
+
+        Assert.assertTrue(registerForm.getAccountCreationForm().isDisplayed());
+
+        Assert.assertTrue(registerForm.getCustomerEmailField().isDisplayed());
+
+        // Required fields filled
+        Assert.assertEquals(registerForm.getCustomerEmailField().getAttribute("value"),"testm4_3@usach.cl" );
+
+		registerForm.setCustomerFirstNameField("Especialista");
+		registerForm.setCustomerLastNameField("DevOps");
+		registerForm.setCustomerPasswordField("tallerM4");
+		registerForm.selectCustomerDateOfBirthDay("11");
+		registerForm.selectCustomerDateOfBirthMonth("2");
+		registerForm.selectCustomerDateOfBirthYear("1985");
+		registerForm.setAddressField("Mi Casa");
+		registerForm.setCityField("Mi Ciudad");
+		registerForm.selectState("32");
+		registerForm.setPostalCodeField("21000");
+		registerForm.setHomePhoneField("555555");
+		registerForm.setMobilePhoneField("99999999");
+		registerForm.setAddressAliasField("Mi Direccion");
+		registerForm.getRegisterBtn().click();
+
+		Assert.assertTrue(seleccionarDireccion.getSectionDeliveryAddress().isDisplayed());
+        Assert.assertEquals(seleccionarDireccion.getCustomerName().getText(), "Especialista DevOps");
+        /*
+        Assert.assertTrue(registerForm.successfullyCreatedAccount().isDisplayed());
+
+        Assert.assertEquals(summary.getCartSummBillingAdressName().getText(), "John Doe");
+		Assert.assertEquals(summary.getCartSummBillingAdressOne().getText(), "Centar");
+		Assert.assertEquals(summary.getCartSummBillingAdressCityState().getText(), "Novi Sad, Connecticut 21000");
+		Assert.assertEquals(summary.getCartSummBillingAdressCountry().getText(), "United States");
+		Assert.assertEquals(summary.getCartSummBillingAdressHomePhone().getText(), "056");
+		Assert.assertEquals(summary.getCartSummBillingAdressMobile().getText(), "066");
+        */
+		
+
+
 
     }
 
-    @Test
-    public void buscarEnAmazonThePhoenixProjectkDevuelvePaginaDescripcion() {
-        System.out.println("Iniciando el test de búsqueda de libro en Amazon");
-        driver.navigate().to("https://www.amazon.com");
-        WebElement searchbox = driver.findElement(By.name("field-keywords"));
-        searchbox.sendKeys("The Phoenix Project");
-        searchbox.submit();
-
-        String urlDescripcionLibro = "";
-        List<WebElement> elements = driver.findElements(By.xpath(
-                "//a[starts-with(@class, 'a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal')]"));
-        System.out.println("Number of elements:" + elements.size());
-
-        for (int i = 0; i < elements.size(); i++) {
-            System.out.println("Enlaces Href:" + elements.get(i).getAttribute("href"));
-            System.out.println("Text:" + elements.get(i).getText());
-            if (elements.get(i).getText().startsWith("The Phoenix Project: A Novel")) {
-                urlDescripcionLibro = elements.get(i).getAttribute("href").trim();
-                break;
-            }
-        }
-        System.out.println("Url Descripción:" + urlDescripcionLibro);
-        if (!urlDescripcionLibro.isEmpty()) {
-            driver.navigate().to(urlDescripcionLibro);
-            assertTrue("Pagina de descripcion", driver.getTitle().contains("The Phoenix Project"));
-
-        } else {
-
-            assertEquals("Amazon.com : The Phoenix Project", driver.getTitle());
-        }
-    }
+    
 
 }
