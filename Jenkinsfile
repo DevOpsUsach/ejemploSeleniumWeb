@@ -6,17 +6,17 @@ pipeline {
     stages {
         stage('Clean') {
             steps {
-                sh "mvn clean -e"
+                sh "./mvnw clean -e"
             }
         }
         stage('Compile') {
             steps {
-                sh "mvn compile -e"
+                sh "./mvnw compile -e"
             }
         }
         stage('Test with Selenium Webdriver') {
             steps {
-                sh "mvn test -e -DcorreoRegistro=" + params.CorreoRegistro + ""
+                sh "./mvnw test -e -DcorreoRegistro=" + params.CorreoRegistro + ""
             }
         }
     }
