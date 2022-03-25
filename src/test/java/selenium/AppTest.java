@@ -98,7 +98,7 @@ public class AppTest {
 	@Test
 	public void compraDeProducto() {
 		System.out.println("Iniciando el test de Compra de producto en el sitio");
-		String correo_registro = System.getProperty("key", "someEmail@somedomain.com");
+		String correo_registro = System.getProperty("correoRegistro", "someEmail@somedomain.com");
 
 		Assert.assertTrue(clothes.getDressesBtn().isDisplayed());
 
