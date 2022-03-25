@@ -1,11 +1,8 @@
 package selenium;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import org.openqa.selenium.By;
+import org.junit.Before;
+import org.junit.Test;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.interactions.Actions;
 import org.testng.Assert;
@@ -13,190 +10,138 @@ import org.testng.Assert;
 import selenium.Models.AccionesCompra;
 import selenium.Models.Carrito;
 import selenium.Models.CrearCuenta;
-import selenium.Models.CuentaUsuario;
 import selenium.Models.FormularioCrearCuenta;
-import selenium.Models.FormularioInicioSesion;
-import selenium.Models.FormularioRegistrarCuenta;
 import selenium.Models.ResumenCarrito;
 import selenium.Models.Ropas;
 import selenium.Models.SeleccionarDireccion;
-
-import org.junit.Test;
-import org.junit.AfterClass;
-import org.junit.Before;
-import java.util.List;
 
 /**
  * Unit test for simple App.
  */
 public class AppTest {
 
-    private WebDriver driver;    
+	private WebDriver driver;
 	private Actions action;
 
-	private Ropas clothes;
-	private Carrito cart;
-	private AccionesCompra shoppingActions;
-	private ResumenCarrito summary;
-	private FormularioInicioSesion signinForm;
-    private CrearCuenta signupForm;
-    private FormularioCrearCuenta registerForm;
-    private SeleccionarDireccion seleccionarDireccion;
-	private CuentaUsuario account;
+	private Ropas paginaRopas;
+	private Carrito controladorCarrito;
+	private AccionesCompra accionesCompra;
+	private ResumenCarrito paginaResumen;	
+	private CrearCuenta formularioRegistro;
+	private FormularioCrearCuenta formularioCrearCuenta;
+	private SeleccionarDireccion paginaSeleccionarDireccion;
+	
 
-    @Before
-    public void setUp() {
-        System.out.println("Iniciando configuración...");
-        System.setProperty("webdriver.chrome.driver", "drivers/chromedriver");
-        driver = new ChromeDriver();
-        driver.get("http://automationpractice.com/index.php");
-        driver.manage().window().maximize();
+	@Before
+	public void setUp() {
+		System.out.println("Iniciando configuración...");
+		System.setProperty("webdriver.chrome.driver", "drivers/chromedriver");
+		driver = new ChromeDriver();
+		driver.get("http://automationpractice.com/index.php");
+		driver.manage().window().maximize();
 
-        
 		action = new Actions(driver);
 
-		clothes = new Ropas(driver);
-		cart = new Carrito(driver);
-		shoppingActions = new AccionesCompra(driver);
-		signinForm = new FormularioInicioSesion(driver);
-        signupForm = new CrearCuenta(driver);
-        registerForm = new FormularioCrearCuenta(driver);
-        seleccionarDireccion = new SeleccionarDireccion(driver);
-		summary = new ResumenCarrito(driver);
-		account = new CuentaUsuario(driver);
+		paginaRopas = new Ropas(driver);
+		controladorCarrito = new Carrito(driver);
+		accionesCompra = new AccionesCompra(driver);		
+		formularioRegistro = new CrearCuenta(driver);
+		formularioCrearCuenta = new FormularioCrearCuenta(driver);
+		paginaSeleccionarDireccion = new SeleccionarDireccion(driver);
+		paginaResumen = new ResumenCarrito(driver);
+
+	}
+
+	
+	
+ 
+	@Test
+	public void compraDeProducto() {
+		System.out.println("Iniciando el test de Compra de producto en el sitio");
+		String correo_registro = System.getProperty("correoRegistro", "someEmail@somedomain.com");
+
+		// Selección de producto
+		paginaRopas.getDressesBtn().isDisplayed();
+		action.moveToElement(paginaRopas.getDressesBtn()).perform();
+		paginaRopas.getSummerDressesBtn().isDisplayed();		
+		action.moveToElement(paginaRopas.getSummerDressesBtn()).perform();
+		paginaRopas.getSummerDressesBtn().click();
+		action.moveToElement(paginaRopas.getSummerDressProduct(1)).perform();
+		// Agregar al carrito
+
+		action.moveToElement(accionesCompra.getAddToCartBtn()).perform();
+		Assert.assertTrue(accionesCompra.getAddToCartBtn().isDisplayed());
+		action.click(accionesCompra.getAddToCartBtn()).build().perform();
+		action.click(accionesCompra.getContinueShopingBtn()).build().perform();
+		Assert.assertTrue(accionesCompra.getContinueShopingBtn().isDisplayed());
+		action.moveToElement(controladorCarrito.getCartTab()).perform();
+		Assert.assertEquals(controladorCarrito.getCartProductsQty().size(), 1);
+		action.moveToElement(controladorCarrito.getCartShipingCost()).perform();
+		Assert.assertEquals(controladorCarrito.getCartShipingCost().getText(), "$2.00");
+		action.moveToElement(controladorCarrito.getCartTotalPrice()).perform();
+		Assert.assertEquals(controladorCarrito.getCartTotalPrice().getText(), "$30.98");
+		action.moveToElement(controladorCarrito.getCartTab()).perform();
+		String valorTotalCarrito = controladorCarrito.getCartTotalPrice().getText().trim();
+		action.moveToElement(controladorCarrito.getCartTabCheckOutBtn()).perform();
+		Assert.assertTrue(controladorCarrito.getCartTabCheckOutBtn().isDisplayed());
+		action.click(controladorCarrito.getCartTabCheckOutBtn()).build().perform();
 
 
-        /*System.out.println(driver.getCurrentUrl());
-        System.out.println(driver.getTitle());*/
+		// Comienzo del proceso de Checkout
+		Assert.assertTrue(paginaResumen.getCartSummaryTable().isDisplayed());
+		paginaResumen.getCartProceedBtn().click();
+		Assert.assertTrue(formularioRegistro.getCreateAccountForm().isDisplayed());
+		// Se provee una cuenta de correo para el registro
+		formularioRegistro.setCreateAccountEmailField(correo_registro);
+		formularioRegistro.getCreateAccountBtn().click();
 
-        /*
-        
-        - Simular la navegación y compra de un producto
-        - Seleccionar un producto. Agregar al carro
-        - Al realizar checkout 
-        - Llenar el formulario con los datos
-        - Crear una cuenta nueva
-        - Verificar que el correo ingresado corresponda al formulario (Punto de verificación)
-        - Address Billing (2 Punto de verificación. Los datos visualizados deben ser iguales a los datos ingresados)
-        - Shipping Aceptar Terminos
-        - Pay by bank wire
-        - Confirmar orden (3 punto de verificación. Monto del Pay by bank wire. Total Ammount)
-        - 
-        
-        */
-    }
+		// Completar el fomulario de nuevo usuario
+		Assert.assertTrue(formularioCrearCuenta.getAccountCreationForm().isDisplayed());
+		Assert.assertTrue(formularioCrearCuenta.getCustomerEmailField().isDisplayed());
+		// 1° Punto de verificación requerido para la actividad. 
+		// Comprobar que el correo ingresado al iniciar el proceso de registro sea el mismo que aparece en el formulario de registro.
+		Assert.assertEquals(formularioCrearCuenta.getCustomerEmailField().getAttribute("value"), correo_registro);
+		formularioCrearCuenta.setCustomerFirstNameField("Especialista");
+		formularioCrearCuenta.setCustomerLastNameField("DevOps");
+		formularioCrearCuenta.setCustomerPasswordField("tallerM4");
+		formularioCrearCuenta.selectCustomerDateOfBirthDay("11");
+		formularioCrearCuenta.selectCustomerDateOfBirthMonth("2");
+		formularioCrearCuenta.selectCustomerDateOfBirthYear("1985");
+		formularioCrearCuenta.setAddressField("Mi Casa");
+		formularioCrearCuenta.setCityField("Mi Ciudad");
+		formularioCrearCuenta.selectState("32");
+		formularioCrearCuenta.setPostalCodeField("21000");
+		formularioCrearCuenta.setHomePhoneField("555555");
+		formularioCrearCuenta.setMobilePhoneField("99999999");
+		formularioCrearCuenta.setAddressAliasField("Mi Direccion");
+		formularioCrearCuenta.getRegisterBtn().click();
+		// Página de selección de dirección
+		Assert.assertTrue(paginaSeleccionarDireccion.getSectionDeliveryAddress().isDisplayed());
+		Assert.assertEquals(paginaSeleccionarDireccion.getCustomerName().getText(), "Especialista DevOps");
+		// 2° Punto de verificación requerido para la actividad. 
+		// Comprobar que la dirección sea la misma que se ingresó en el formulario de registro.
+		Assert.assertEquals(paginaSeleccionarDireccion.getCustomerAddress().getText(), "Mi Casa");
+		Assert.assertEquals(paginaSeleccionarDireccion.getCustomerCityAddress().getText(), "Mi Ciudad, New York 21000");		
+		paginaSeleccionarDireccion.getProceedCheckoutBtn().click();
 
-    // @AfterClass
-	// public void closeAll() {
-	// 	//account.getAccountLogout().click();
-	// 	driver.quit();
-	// }
+		// Página de método de envío y aceptar términos y condiciones
+		Assert.assertTrue(paginaResumen.getFormShippingOptions().isDisplayed());
+		paginaResumen.getCartSummTermsOfServiceCheck().click();
+		paginaResumen.getCartProceedBtnTwo().click();
 
-    @Test
-    public void compraDeProducto() {
-        System.out.println("Iniciando el test de Compra de producto en el sitio");
+		// Página de resumen y método de pago.
+		Assert.assertTrue(paginaResumen.getCartSummaryTable().isDisplayed());
+		// 3° Punto de verificación requerido para la actividad. 
+		// Comprobar que el monto total a pagar sea el mismo que aparecía en el carro.
+		Assert.assertEquals(paginaResumen.getCartSummaryTotalPrice().getText(), valorTotalCarrito);
+		paginaResumen.getCartSummPayByBankWire().click();
+		Assert.assertEquals(paginaResumen.getCartSummPayByBankWireConfirm().getText(), "BANK-WIRE PAYMENT.");
+		paginaResumen.getCartSummConfirmOrderBtn().click();
 
-        Assert.assertTrue(clothes.getDressesBtn().isDisplayed());
-
-		action.moveToElement(clothes.getDressesBtn()).perform();
-
-		Assert.assertTrue(clothes.getSummerDressesBtn().isDisplayed());
-		Assert.assertTrue(clothes.getCasualDressesBtn().isDisplayed());
-		Assert.assertTrue(clothes.getEveningDressesBtn().isDisplayed());
-
-		action.moveToElement(clothes.getSummerDressesBtn()).perform();
-		clothes.getSummerDressesBtn().click();
-
-		Assert.assertTrue(clothes.getSummerDressProduct(1).isDisplayed());
-		Assert.assertTrue(clothes.getSummerDressProduct(2).isDisplayed());
-		Assert.assertTrue(clothes.getSummerDressProduct(3).isDisplayed());
-		Assert.assertEquals(clothes.getDressesCount().size(), 3);
-
-		action.moveToElement(clothes.getSummerDressProduct(1)).perform();
-		action.moveToElement(shoppingActions.getAddToCartBtn()).perform();
-
-		Assert.assertTrue(shoppingActions.getAddToCartBtn().isDisplayed());
-
-		action.click(shoppingActions.getAddToCartBtn()).build().perform();
-		action.click(shoppingActions.getContinueShopingBtn()).build().perform();
-
-		Assert.assertTrue(shoppingActions.getContinueShopingBtn().isDisplayed());
-
-		action.moveToElement(cart.getCartTab()).perform();
-
-		Assert.assertEquals(cart.getCartProductsQty().size(), 1);
-
-		action.moveToElement(cart.getCartShipingCost()).perform();
-
-		Assert.assertEquals(cart.getCartShipingCost().getText(), "$2.00");
-
-		action.moveToElement(cart.getCartTotalPrice()).perform();
-
-		Assert.assertEquals(cart.getCartTotalPrice().getText(), "$30.98");
-
-
-        action.moveToElement(cart.getCartTab()).perform();
-		action.moveToElement(cart.getCartTabCheckOutBtn()).perform();
-
-		Assert.assertTrue(cart.getCartTabCheckOutBtn().isDisplayed());
-
-		action.click(cart.getCartTabCheckOutBtn()).build().perform();
-		
-		Assert.assertTrue(summary.getCartSummaryTable().isDisplayed());
-		Assert.assertEquals(summary.getCartSummTotalProductsNum().size(), 1);
-		Assert.assertEquals(summary.getCartSummTotalProductsPrice().getText(), "$28.98");
-		Assert.assertEquals(summary.getCartSummaryTotalPrice().getText(), "$30.98");
-		Assert.assertEquals(summary.getCartSummTotalShipping().getText(), "$2.00");
-		
-
-        summary.getCartProceedBtn().click();
-
-		Assert.assertTrue(signupForm.getCreateAccountForm().isDisplayed());
-
-		signupForm.setCreateAccountEmailField("testm4_3@usach.cl");
-		
-		signupForm.getCreateAccountBtn().click();
-
-        Assert.assertTrue(registerForm.getAccountCreationForm().isDisplayed());
-
-        Assert.assertTrue(registerForm.getCustomerEmailField().isDisplayed());
-
-        // Required fields filled
-        Assert.assertEquals(registerForm.getCustomerEmailField().getAttribute("value"),"testm4_3@usach.cl" );
-
-		registerForm.setCustomerFirstNameField("Especialista");
-		registerForm.setCustomerLastNameField("DevOps");
-		registerForm.setCustomerPasswordField("tallerM4");
-		registerForm.selectCustomerDateOfBirthDay("11");
-		registerForm.selectCustomerDateOfBirthMonth("2");
-		registerForm.selectCustomerDateOfBirthYear("1985");
-		registerForm.setAddressField("Mi Casa");
-		registerForm.setCityField("Mi Ciudad");
-		registerForm.selectState("32");
-		registerForm.setPostalCodeField("21000");
-		registerForm.setHomePhoneField("555555");
-		registerForm.setMobilePhoneField("99999999");
-		registerForm.setAddressAliasField("Mi Direccion");
-		registerForm.getRegisterBtn().click();
-
-		Assert.assertTrue(seleccionarDireccion.getSectionDeliveryAddress().isDisplayed());
-        Assert.assertEquals(seleccionarDireccion.getCustomerName().getText(), "Especialista DevOps");
-        /*
-        Assert.assertTrue(registerForm.successfullyCreatedAccount().isDisplayed());
-
-        Assert.assertEquals(summary.getCartSummBillingAdressName().getText(), "John Doe");
-		Assert.assertEquals(summary.getCartSummBillingAdressOne().getText(), "Centar");
-		Assert.assertEquals(summary.getCartSummBillingAdressCityState().getText(), "Novi Sad, Connecticut 21000");
-		Assert.assertEquals(summary.getCartSummBillingAdressCountry().getText(), "United States");
-		Assert.assertEquals(summary.getCartSummBillingAdressHomePhone().getText(), "056");
-		Assert.assertEquals(summary.getCartSummBillingAdressMobile().getText(), "066");
-        */
+		// Página de orden completada.
+		Assert.assertTrue(paginaResumen.getOrderSuccessMsg().isDisplayed());
 		
 
-
-
-    }
-
-    
+	}
 
 }
